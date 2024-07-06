@@ -7,7 +7,8 @@ dotenv.config(
 const _config = {
     port:process.env.PORT,
     mongoUrl:process.env.MONGODB_URI,
-    websiteName :"saadEbookStoor"
+    websiteName :"saadEbookStoor",
+    showError:process.env.NODE_ENV
 }
 
 export const config = Object.freeze(_config);
