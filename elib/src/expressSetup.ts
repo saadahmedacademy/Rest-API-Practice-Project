@@ -1,6 +1,6 @@
-import express,{Request,Response,NextFunction} from 'express'
-import { HttpError } from 'http-errors';
-import { config } from './config/config';
+import express from 'express'
+import createHttpError from 'http-errors';
+import { globalErrorHandler } from './middleware/gobalErrorHandler';
 
 const app = express();
 
@@ -8,19 +8,17 @@ const app = express();
 // import Routes
 
 app.get('/',(req,res,next)=>{
-    res.json({
-        message:"saad"
-    })
+
+    const error =  createHttpError(400,"Something went wrong here");
+    throw error;
+    
 })
 
-// Global error handler
-app.use((err:HttpError,req:Request,res:Response,next:NextFunction)=>{
-    const statusCode = err.statusCode || 500
+// import user routes
+import userRouter from './user/user.router';
+app.use('/api/users' ,userRouter)
 
-    return res.status(statusCode).json({
-        message:err.message || "Internal Server Error",
-        errorStack:config.showError === "development" ? err.stack : ""
-    })
-});
+// Global error handler
+app.use(globalErrorHandler);
 
 export default app
