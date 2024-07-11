@@ -4,15 +4,7 @@ import { globalErrorHandler } from './middleware/gobalErrorHandler';
 
 const app = express();
 
-
-// import Routes
-
-app.get('/',(req,res,next)=>{
-
-    const error =  createHttpError(400,"Something went wrong here");
-    throw error;
-    
-})
+app.use(express.json());
 
 // import user routes
 import userRouter from './user/user.router';
