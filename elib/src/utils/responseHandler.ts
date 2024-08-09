@@ -10,3 +10,5 @@ const ApiResponse = (
     }
     
 }
+
+export {ApiResponse}
