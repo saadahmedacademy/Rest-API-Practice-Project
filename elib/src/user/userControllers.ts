@@ -1,94 +1,88 @@
 import { NextFunction, Response, Request } from "express";
 import createHttpError from 'http-errors';
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcrypt';
 import asyncHandler from "../utils/asyncHandler";
 import { User } from "./user.model";
 import { ApiResponse } from "../utils/responseHandler";
 import { sign } from "jsonwebtoken";
 import { config } from "../config/config";
 
+const registerUser = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { name, email, password } = req.body;
 
-const registerUser = (asyncHandler(
-    async (req: Request, res: Response, next: NextFunction) => {
-
-        // To register the user
-        const { name, email, password } = req.body;
-
-        // To checks all fileds are not empty
-        if (!name || !email || !password) {
-            const error = createHttpError(400, "All fields are required");
-            throw next(error)
-        }
-
-        const existedUser = await User.findOne({ email })
-
-        if (existedUser) {
-            throw next(createHttpError(409, "User with email already exists"))
-        }
-        
-
-        // To hash the password 
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // To create the user
-        const createUser = await User.create({
-            name,
-            email,
-            password : hashedPassword
-        });
-
-        if (!createUser) {
-            throw next(createHttpError(500, "Shomthing went wrong while creating user"))
-        }
-        
-        // To generate the jwt token
-        const token = sign({_id: createUser._id}, config.screte_key! as string, {expiresIn: '7d'});
-
-        // To send the response
-        res.status(201).json(
-            ApiResponse(
-                200,
-                "User created successfully",
-                 createUser._id
-            )
-        );
-
+    // Check that all fields are present
+    if (!name || !email || !password) {
+      return next(createHttpError(400, "All fields are required"));
     }
-));
 
+    // Check if user with the email already exists
+    const existedUser = await User.findOne({ email });
+    if (existedUser) {
+      return next(createHttpError(409, "User with this email already exists"));
+    }
 
-const loginUser = (asyncHandler(
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create a new user
+    const createUser = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+    });
+
+    if (!createUser) {
+      return next(createHttpError(500, "Something went wrong while creating user"));
+    }
+
+    // Generate JWT token
+    const token = sign(
+      { _id: createUser._id },
+      config.screte_key! as string, 
+      { expiresIn: '7d' }
+    );
+
+    // Send response with the created user ID and token
+    res.status(201).json(
+      ApiResponse(201, "User created successfully", {
+        userId: createUser._id,
+        token
+      })
+    );
+  }
+);
+
+const loginUser = asyncHandler(
     async (req, res, next) => {
-        // User Validation
-        const { email, password, name } = req.body;
+      const { email, password, name } = req.body;
+  
+      if (!password || (!email && !name)) {
+        return next(createHttpError(400, "Password is required along with either email or name"));
+      }
+  
+      // Find user by email or name
+      const user = await User.findOne({
+        $or: [{ email }, { name }],
+      });
+  
+      if (!user) {
+        return next(createHttpError(401, "Invalid email or password"));
+      }
+  
+      // Compare the provided password with the stored hashed password
+      const isPasswordValid =  bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return next(createHttpError(401, "Invalid email or password"));
+      }
+  
+      // Send successful response with the user data
+      res.status(200).json(
+        ApiResponse(200, "User login successful", user)
+      );
+    }
+  );
+  
 
-        if (!password && (!email || !name)) {
-            throw next(createHttpError(400, "password is must and and give one of email or name"));
-        }
 
-        // To find the user by email or name
-        const user = await User.findOne({
-            $or: [{ email }, { name }]
-        });
-
-        // To verify the user
-        if (!user) {
-            throw next(createHttpError(401, "User email or password is not correct "));
-        };
-
-        // To compar the password
-        if (user.password !== password) {
-            throw next(createHttpError(401, "User email or password is not correct "));
-        };
-       
-        // To send the response 
-        res.status(200).json(
-            ApiResponse(
-                200,
-                "User login successfully",
-                user
-            )
-        );
-
-    }))
-export { registerUser }
+export { registerUser ,loginUser};
