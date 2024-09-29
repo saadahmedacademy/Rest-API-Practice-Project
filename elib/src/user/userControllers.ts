@@ -10,6 +10,7 @@ import { config } from "../config/config";
 const registerUser = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const { name, email, password } = req.body;
+    console.log(req.body)
 
     // Check that all fields are present
     if (!name || !email || !password) {
@@ -40,14 +41,13 @@ const registerUser = asyncHandler(
     const token = sign(
       { _id: createUser._id },
       config.screte_key! as string, 
-      { expiresIn: '7d' }
+      { expiresIn: '7d' , algorithm:"HS256"}
     );
 
     // Send response with the created user ID and token
-    res.status(201).json(
+    return res.status(201).json(
       ApiResponse(201, "User created successfully", {
-        userId: createUser._id,
-        token
+        "accessToken": token,
       })
     );
   }
