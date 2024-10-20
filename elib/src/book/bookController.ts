@@ -4,14 +4,12 @@ import { NextFunction, Response, Request } from "express";
 
 
 const createBook = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const { title, author, price, quantity } = req.body;
-
+    console.log(req.files);
+    console.log("I'm ready to create book");
     // if( ){
     //     return next(createHttpError(400, "All fields are required to create book"));
     // }
-    console.log(req.body);
-
-    const newBook = ""
+    // console.log(req.body);
 });
 
 export { createBook };
