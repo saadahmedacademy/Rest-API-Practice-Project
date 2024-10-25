@@ -20,7 +20,7 @@ const bookSchema = new Schema<BookType>({
         required: true
     }
     ,
-    file: { 
+    bookFile: { 
         type: String,
         required: true
     }

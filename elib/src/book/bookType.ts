@@ -7,7 +7,7 @@ export interface BookType {
     author: userSchema
     genre: string
     coverImage: string
-    file: string
+    bookFile: string
     createdAt: Date
     updatedAt: Date
 }

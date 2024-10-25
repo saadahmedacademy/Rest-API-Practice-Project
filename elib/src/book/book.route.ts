@@ -6,7 +6,7 @@ import { createBook } from './bookController';
 // To upload multiple files
 
 const upload = multer({
-    dest: path.resolve(__dirname , "../public/tempFiles"),
+    dest: path.resolve(__dirname , "../../public/tempFiles",),
     limits:{fileSize:3e7}
 })
 
@@ -14,7 +14,7 @@ const upload = multer({
 const bookRouter = express.Router();
 bookRouter.route("/").post(upload.fields([
     {name : "coverImage" , maxCount : 1},
-    {name : "file" , maxCount : 1}
+    {name : "bookFile" , maxCount : 1}
 ]),createBook)
 
 export default bookRouter;
