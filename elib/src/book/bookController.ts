@@ -4,51 +4,47 @@ import { NextFunction, Response, Request } from "express";
 import cloudinary from "../config/cloudinary";
 import path from "node:path";
 
-
 const createBook = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    console.log("req.file",req.files);
- try {
-     
-    const files = req.files as { [filename: string]: Express.Multer.File[] };
+    console.log("Files received:", req.files);  // Check if bookFile exists here
 
-    if (!files.coverImage || !files.coverImage[0]) {
-        return next(createHttpError(400, "Cover image file is required"));
-    }
-    
-    const coverImageMimeType = files.coverImage[0].mimetype.split('/').at(-1);
-    const fileName = files.coverImage[0].filename;
-    const filePath = path.resolve(__dirname, "../../public/tempFiles", fileName);
-    
-    // Upload the cover image to Cloudinary
-    const uploadCoverImage = await cloudinary.uploader.upload(filePath, {
-        filename_override: fileName,
-        folder: 'book-cover',
-        format: coverImageMimeType
-    });
-    
-    if (!files.bookFile || !files.bookFile[0]) {
-        return next(createHttpError(400, "Book file is required"));
-    }
-    
-    const bookFileName = files.bookFile[0].filename;
-    const bookFilePath = path.resolve(__dirname, "../../public/tempFiles", bookFileName);
-    
-    // Upload the book file to Cloudinary
-    const uploadBook = await cloudinary.uploader.upload(bookFilePath, {
-        resource_type: 'raw',
-        filename_override: bookFileName,
-        folder: 'book-pdfs',
-        format: 'pdf'
-    });
-    
+    try {
+        const files = req.files as { [key: string]: Express.Multer.File[] };
 
-    // if( ){
-    //     return next(createHttpError(400, "All fields are required to create book"));
-    // }
-    // console.log(req.body);
- } catch (error) {
-    console.log("something went wrong while creating book",error);
- }
+        // Check if required files are uploaded
+        if (!files.coverImage) {
+            return next(createHttpError(400, "cover image  are required"));
+        }
+        else if (!files || !files["bookFile"] || files["bookFile"].length === 0) {
+            return next(createHttpError(400, "book file are required"));
+        }
+       
+        // Process cover image
+        const coverImage = files.coverImage[0];
+        const coverImagePath = path.resolve(__dirname, "../../public/tempFiles", coverImage.filename);
+
+        const uploadCoverImage = await cloudinary.uploader.upload(coverImagePath, {
+            folder: 'book-cover',
+            format: coverImage.mimetype.split("/").pop()
+        });
+
+        // Process book file
+        const bookFile = files.bookFile[0];
+        const bookFilePath = path.resolve(__dirname, "../../public/tempFiles", bookFile.filename);
+
+        const uploadBookFile = await cloudinary.uploader.upload(bookFilePath, {
+            resource_type: "raw",
+            folder: 'book-pdfs',
+            format: 'pdf'
+        });
+
+        // Response or further logic after upload
+        res.status(200).json({
+            coverImage: uploadCoverImage.secure_url,
+            bookFile: uploadBookFile.secure_url
+        });
+    } catch (error) {
+        next(createHttpError(500, "An error occurred while creating the book"));
+    }
 });
 
 export { createBook };
