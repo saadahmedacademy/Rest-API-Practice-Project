@@ -1,5 +1,4 @@
 import express from "express";
-import path from "node:path";
 import multer from "multer";
 import { createBook } from "./bookController";
 
