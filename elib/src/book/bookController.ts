@@ -3,47 +3,43 @@ import asyncHandler from "../utils/asyncHandler";
 import { NextFunction, Response, Request } from "express";
 import cloudinary from "../config/cloudinary";
 import path from "node:path";
+import fs from "node:fs/promises";
 
 const createBook = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    console.log("Files received:", req.files);  // Check if bookFile exists here
+    const files = req.files as { [key: string]: Express.Multer.File[] };
+
+    // Validate required files
+    if (!files?.coverImage || !files?.bookFile) {
+        throw createHttpError(400, "Both 'coverImage' and 'bookFile' are required.");
+    }
+
+    const coverImage = files.coverImage[0];
+    const bookFile = files.bookFile[0];
+
+    const coverImagePath = path.resolve(__dirname, "../../public/tempFiles", coverImage.filename);
+    const bookFilePath = path.resolve(__dirname, "../../public/tempFiles", bookFile.filename);
 
     try {
-        const files = req.files as { [key: string]: Express.Multer.File[] };
+        // Parallel upload to Cloudinary
+        const [uploadCoverImage, uploadBookFile] = await Promise.all([
+            cloudinary.uploader.upload(coverImagePath, { folder: "book-cover" }),
+            cloudinary.uploader.upload(bookFilePath, { resource_type: "raw", folder: "book-pdfs" }),
+        ]);
 
-        // Check if required files are uploaded
-        if (!files.coverImage) {
-            return next(createHttpError(400, "cover image  are required"));
-        }
-        else if (!files || !files["bookFile"] || files["bookFile"].length === 0) {
-            return next(createHttpError(400, "book file are required"));
-        }
-       
-        // Process cover image
-        const coverImage = files.coverImage[0];
-        const coverImagePath = path.resolve(__dirname, "../../public/tempFiles", coverImage.filename);
-
-        const uploadCoverImage = await cloudinary.uploader.upload(coverImagePath, {
-            folder: 'book-cover',
-            format: coverImage.mimetype.split("/").pop()
-        });
-
-        // Process book file
-        const bookFile = files.bookFile[0];
-        const bookFilePath = path.resolve(__dirname, "../../public/tempFiles", bookFile.filename);
-
-        const uploadBookFile = await cloudinary.uploader.upload(bookFilePath, {
-            resource_type: "raw",
-            folder: 'book-pdfs',
-            format: 'pdf'
-        });
-
-        // Response or further logic after upload
+        // Send response with Cloudinary URLs
         res.status(200).json({
-            coverImage: uploadCoverImage.secure_url,
-            bookFile: uploadBookFile.secure_url
+            coverImageUrl: uploadCoverImage.secure_url,
+            bookFileurl: uploadBookFile.secure_url,
         });
     } catch (error) {
-        next(createHttpError(500, "An error occurred while creating the book"));
+        // Pass the error to the global error handler
+        next(createHttpError(500, "Error while createing book and uploading files"));
+    } finally {
+        // Cleanup: Remove temporary files
+        await Promise.allSettled([
+            fs.unlink(coverImagePath),
+            fs.unlink(bookFilePath),
+        ]);
     }
 });
 
