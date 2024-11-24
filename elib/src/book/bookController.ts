@@ -4,8 +4,12 @@ import { NextFunction, Response, Request } from "express";
 import cloudinary from "../config/cloudinary";
 import path from "node:path";
 import fs from "node:fs/promises";
+import { Book } from "./book.model";
 
 const createBook = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
+    const { title, genre } = req.body;
+
     const files = req.files as { [key: string]: Express.Multer.File[] };
 
     // Validate required files
@@ -23,11 +27,25 @@ const createBook = asyncHandler(async (req: Request, res: Response, next: NextFu
         // Parallel upload to Cloudinary
         const [uploadCoverImage, uploadBookFile] = await Promise.all([
             cloudinary.uploader.upload(coverImagePath, { folder: "book-cover" }),
-            cloudinary.uploader.upload(bookFilePath, { resource_type: "raw", folder: "book-pdfs" }),
+            cloudinary.uploader.upload(bookFilePath, { resource_type: "raw", folder: "book-pdfs" ,format:"pdf"}),
         ]);
 
-        // Send response with Cloudinary URLs
+       
+         //To upload the cloudinary's url on database
+         const newBook = await Book.create({
+            title ,
+            genre ,
+            author:"66f960978e49d42a4bacd8a4",
+            coverImage:uploadCoverImage.secure_url,
+            bookFile:uploadBookFile.secure_url
+         });
+
+         if(!newBook){
+          next(createHttpError(400 ,"error while createing newBook model in database"))
+         }
+
         res.status(200).json({
+            message:"newBook moder created successfully",
             coverImageUrl: uploadCoverImage.secure_url,
             bookFileurl: uploadBookFile.secure_url,
         });
