@@ -18,16 +18,10 @@ export const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 },
 })
 
-bookRouter.post(
-  "/",
-  upload.fields([
-    { name: "bookFile", maxCount: 1 },
-    { name: "coverImage", maxCount: 1 },
-  ]),
+bookRouter.route("/").post(
+  upload.fields([{ name: "bookFile", maxCount: 1 }, { name: "coverImage", maxCount: 1 }]),
   createBook
 );
-
-
 
 
 
