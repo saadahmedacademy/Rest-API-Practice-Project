@@ -77,6 +77,7 @@ const loginUser = asyncHandler(async (req: Request, res: Response, next: NextFun
 
     // Check if user with the email already exists
     const existedUser = await User.findOne({ email });
+    
     if (!existedUser) {
       return next(createHttpError(40, "Invalid user email to login or user not found"));
     }

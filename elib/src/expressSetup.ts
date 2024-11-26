@@ -9,7 +9,6 @@ app.use(express.json());
 import userRouter from './user/user.router';
 import bookRouter from './book/book.route';
 
-
 app.use('/api/users' ,userRouter)
 app.use('/api/books' ,bookRouter)
 
